@@ -8,12 +8,13 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
-int sockfd, newsockfd, port;
+int sockfd, newsockfd, port, n;
 socklen_t clilen;
 char buffer[256];
 struct sockaddr_in serv_addr, cli_addr;
-int n;
+pid_t pid;
 
+void communicateWithClient(int newsockfd);
 void error(const char* msg);
 void checkArguments(int argc, char* argv[]);
 void checkOpeningSocket();
@@ -35,28 +36,43 @@ int main(int argc, char* argv[])
 	bindSocket();
 
 	clilen = sizeof(cli_addr);
-	newsockfd = accept(sockfd, (struct sockaddr*)&cli_addr, &clilen);
-	checkAccept();
 
-	bzero(buffer, 256);
-	n = read(newsockfd, buffer, 255);
-	checkRead();
-
-	printf("Here is the message: %s\n", buffer);
-	char message[50];
-	strcpy(message, "I got it!");
 	while (1) {
+		newsockfd = accept(sockfd, (struct sockaddr*)&cli_addr, &clilen);
+		checkAccept();
+
+		pid = fork();
+		if (pid < 0)
+			error("ERROR on fork");
+
+		if (pid == 0) { // child
+			close(sockfd);
+			communicateWithClient(newsockfd);
+			exit(0);
+		} else {
+			close(newsockfd);
+		}
+	}
+	close(newsockfd);
+	close(sockfd);
+	return 0;
+}
+
+void communicateWithClient(int newsockfd)
+{
+	while (1) {
+		bzero(buffer, 256);
+		n = read(newsockfd, buffer, 255);
+		checkRead();
+
+		printf("C:	 %s\n", buffer);
 
 		strcat(message, "t");
 
 		n = write(newsockfd, message, 18);
 		checkWrite();
-		printf("I believe I just wrote %s \n", message);
-		//sleep(2);
+		printf("S: 		 %s \n", message);
 	}
-	close(newsockfd);
-	close(sockfd);
-	return 0;
 }
 
 void checkArguments(int argc, char* argv[])
