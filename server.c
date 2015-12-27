@@ -65,13 +65,11 @@ void communicateWithClient(int newsockfd)
 		n = read(newsockfd, buffer, 255);
 		checkRead();
 
-		printf("C:	 %s\n", buffer);
+		printf("C:    %s\n", buffer);
 
-		strcat(message, "t");
-
-		n = write(newsockfd, message, 18);
+		n = write(newsockfd, "Got your message and will do whatever you command!", 60);
 		checkWrite();
-		printf("S: 		 %s \n", message);
+		printf("S:     %s \n", "Got your message and will do whatever you command!");
 	}
 }
 
