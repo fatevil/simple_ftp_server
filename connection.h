@@ -6,6 +6,13 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
-void setupSocketAdresse(struct sockaddr_in serv_addr, int port);
-void bindSocket(int sockfd, struct sockaddr_in serv_addr);
+typedef struct State
+{
+	/* Current directory */
+	char pwd[100];
+	/*Size of pwd*/
+	int pwdLength;
+
+} State;
+
 void communicateWithClient(int newsockfd);

@@ -9,14 +9,6 @@
 #include "command.h"
 #include "util.h"
 
-void checkArguments(int argc, char* argv[])
-{
-	if (argc < 2) {
-		fprintf(stderr, "ERROR, no port provided\n");
-		exit(1);
-	}
-}
-
 void error(const char* msg)
 {
 	perror(msg);

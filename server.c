@@ -1,3 +1,5 @@
+/* A simple server in the internet domain using TCP
+   The port number is passed as an argument */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,31 +13,37 @@
 
 #define BSIZE 256
 
-int sockfd, newsockfd, port, n;
+int sockfd, newsockfd, port = 0, n;
 socklen_t clilen;
 char buffer[256];
 struct sockaddr_in serv_addr, cli_addr;
 pid_t pid;
 
+void communicateWithClient(int newsockfd);
+void setupSocketAdresse();
+void bindSocket();
+
 int main(int argc, char* argv[])
 {
-
-	checkArguments(argc, argv);
+	if (argc < 2) {
+		fprintf(stderr, "ERROR, no port provided\n");
+		exit(1);
+	}
 	port = atoi(argv[1]);
-
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockfd < 0) {
 		error("ERROR opening socket");
 	}
+	setupSocketAdresse();
 
-	setupSocketAdresse(serv_addr, port);
+	bindSocket();
 
-	bindSocket(sockfd, serv_addr);
+	printf("Listening on port %d \n", port);
 
 	clilen = sizeof(cli_addr);
-
 	while (1) {
 		newsockfd = accept(sockfd, (struct sockaddr*)&cli_addr, &clilen);
+
 		printf("Connection established!\n");
 		if (newsockfd < 0) {
 			error("ERROR on accept");
@@ -61,13 +69,17 @@ int main(int argc, char* argv[])
 void communicateWithClient(int newsockfd)
 {
 	Command* cmd = malloc(sizeof(Command));
+	State* state = malloc(sizeof(State));
+	strcpy(state->pwd, "./");
 
-	char buffer[256];
+	char buffer[BSIZE];
 	while (1) {
-		bzero(buffer, 256);
+		bzero(cmd->arg, 100);
+		bzero(cmd->command, 5);
+		bzero(buffer, BSIZE);
 
 		/*  Read client text input */
-		n = read(newsockfd, buffer, 255);
+		n = read(newsockfd, buffer, BSIZE - 1);
 		if (n < 0) {
 			error("ERROR reading from socket");
 		}
@@ -76,7 +88,7 @@ void communicateWithClient(int newsockfd)
 		/*  Handle client text input  */
 		parseCommand(buffer, cmd);
 		bzero(buffer, 256);
-		handleCommand(cmd, buffer);
+		handleCommand(cmd, buffer, state, BSIZE);
 
 		/* Send back response */
 		n = write(newsockfd, buffer, 60);
@@ -85,4 +97,19 @@ void communicateWithClient(int newsockfd)
 		}
 		printf("S:     %s \n", buffer);
 	}
+}
+void setupSocketAdresse()
+{
+	bzero((char*)&serv_addr, sizeof(serv_addr));
+	serv_addr.sin_family = AF_INET;
+	serv_addr.sin_addr.s_addr = INADDR_ANY;
+	serv_addr.sin_port = htons(port);
+}
+
+void bindSocket()
+{
+	if (bind(sockfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0) {
+		error("ERROR on binding");
+	}
+	listen(sockfd, 5);
 }

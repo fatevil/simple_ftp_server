@@ -9,9 +9,9 @@
 typedef struct Command
 {
 	char command[5];
-	char arg[1024];
+	char arg[100];
 } Command;
 
 void parseCommand(char* cmdstring, Command* cmd);
-void handleCommand(Command* command, char* string);
-
+void handleCommand(Command* command, char* string, State * state, int arrayLength);
+void setResponse(int code, char message[], char buffer[]);

@@ -7,4 +7,3 @@
 #include <netinet/in.h>
 
 void error(const char* msg);
-void checkArguments(int argc, char* argv[]);
