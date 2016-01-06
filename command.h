@@ -18,3 +18,4 @@ void setResponse(int code, char message[], char buffer[]);
 void executeCD(Command* command, char buffer[], State* state, int arrayLength);
 void executeCDUP(Command* command, char buffer[], State* state, int arrayLength);
 void executeMKD(Command* command, char buffer[], State* state, int arrayLength);
+void executePWD(Command* command, char buffer[], State* state, int arrayLength);

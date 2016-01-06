@@ -87,7 +87,7 @@ void communicateWithCmd()
 
 		bzero(buffer, BSIZE);
 		handleCommand(cmd, buffer, state, BSIZE);
-		printf("local S:     %s \n", buffer);
+		printf("local: %s \n", buffer);
 	}
 }
 

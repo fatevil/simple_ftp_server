@@ -21,6 +21,8 @@ void handleCommand(Command* command, char buffer[], State* state, int arrayLengt
 		executeMKD(command, buffer, state, arrayLength);
 	} else if (strcmp(command->command, "cd") == 0) {
 		executeCD(command, buffer, state, arrayLength);
+	} else if (strcmp(command->command, "pwd") == 0) {
+		executePWD(command, buffer, state, arrayLength);
 	} else if (strcmp(command->command, "cdup") == 0) {
 		executeCDUP(command, buffer, state, arrayLength);
 	} else {
@@ -118,4 +120,12 @@ void executeCD(Command* command, char buffer[], State* state, int arrayLength)
 		char message[] = "It doesnt exist!\n";
 		setResponse(100, message, buffer);
 	}
+}
+
+void executePWD(Command* command, char buffer[], State* state, int arrayLength)
+{
+	char message[] = "Current folder: ";
+	strcat(message, state->pwd);
+	strcat(message, "\n");
+	setResponse(100, message, buffer);
 }
