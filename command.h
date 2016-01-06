@@ -13,5 +13,8 @@ typedef struct Command
 } Command;
 
 void parseCommand(char* cmdstring, Command* cmd);
-void handleCommand(Command* command, char* string, State * state, int arrayLength);
+void handleCommand(Command* command, char* string, State* state, int arrayLength);
 void setResponse(int code, char message[], char buffer[]);
+void executeCD(Command* command, char buffer[], State* state, int arrayLength);
+void executeCDUP(Command* command, char buffer[], State* state, int arrayLength);
+void executeMKD(Command* command, char buffer[], State* state, int arrayLength);

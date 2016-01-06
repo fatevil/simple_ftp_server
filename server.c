@@ -19,6 +19,7 @@ char buffer[256];
 struct sockaddr_in serv_addr, cli_addr;
 pid_t pid;
 
+void communicateWithCmd();
 void communicateWithClient(int newsockfd);
 void setupSocketAdresse();
 void bindSocket();
@@ -38,6 +39,14 @@ int main(int argc, char* argv[])
 
 	bindSocket();
 
+	pid = fork();
+	if (pid == 0) { // child recieving local input
+
+		communicateWithCmd();
+		close(sockfd);
+		exit(0);
+	}
+
 	printf("Listening on port %d \n", port);
 
 	clilen = sizeof(cli_addr);
@@ -53,7 +62,7 @@ int main(int argc, char* argv[])
 		if (pid < 0)
 			error("ERROR on fork");
 
-		if (pid == 0) { // child
+		if (pid == 0) { // child communitating with client
 			close(sockfd);
 			communicateWithClient(newsockfd);
 			exit(0);
@@ -61,16 +70,36 @@ int main(int argc, char* argv[])
 			close(newsockfd);
 		}
 	}
+	printf("doing 4");
 	close(newsockfd);
 	close(sockfd);
 	return 0;
+}
+
+void communicateWithCmd()
+{
+	char buffer[BSIZE];
+	Command* cmd = malloc(sizeof(Command));
+	State* state = malloc(sizeof(State));
+	strcpy(state->pwd, "./data/");
+
+	while (1) {
+		bzero(buffer, 256);
+		fgets(buffer, 255, stdin);
+
+		parseCommand(buffer, cmd);
+
+		bzero(buffer, 256);
+		handleCommand(cmd, buffer, state, BSIZE);
+		printf("lS:     %s \n", buffer);
+	}
 }
 
 void communicateWithClient(int newsockfd)
 {
 	Command* cmd = malloc(sizeof(Command));
 	State* state = malloc(sizeof(State));
-	strcpy(state->pwd, "./");
+	strcpy(state->pwd, "./data/");
 
 	char buffer[BSIZE];
 	while (1) {
@@ -84,6 +113,7 @@ void communicateWithClient(int newsockfd)
 			error("ERROR reading from socket");
 		}
 		printf("C:    %s", buffer);
+		//			system(buffer);
 
 		/*  Handle client text input  */
 		parseCommand(buffer, cmd);
