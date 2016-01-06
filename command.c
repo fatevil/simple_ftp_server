@@ -45,7 +45,7 @@ void parseCommand(char* cmdstring, Command* command)
 
 void executeCDUP(Command* command, char buffer[], State* state, int arrayLength)
 {
-	if (strcmp(state->pwd, "./data/") == 0) {
+	if (strcmp(state->pwd, BASEFOLDER) == 0) {
 		setResponse(100, "You can't cdup main directory!", buffer);
 	} else {
 		int i;

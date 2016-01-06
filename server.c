@@ -11,16 +11,12 @@
 #include "command.h"
 #include "util.h"
 
-#define BSIZE 256
-
 int sockfd, newsockfd, port = 0, n;
 socklen_t clilen;
 char buffer[256];
 struct sockaddr_in serv_addr, cli_addr;
 pid_t pid;
 
-void communicateWithCmd();
-void communicateWithClient(int newsockfd);
 void setupSocketAdresse();
 void bindSocket();
 
@@ -81,7 +77,7 @@ void communicateWithCmd()
 	char buffer[BSIZE];
 	Command* cmd = malloc(sizeof(Command));
 	State* state = malloc(sizeof(State));
-	strcpy(state->pwd, "./data/");
+	strcpy(state->pwd, BASEFOLDER);
 
 	while (1) {
 		bzero(buffer, 256);
@@ -99,7 +95,7 @@ void communicateWithClient(int newsockfd)
 {
 	Command* cmd = malloc(sizeof(Command));
 	State* state = malloc(sizeof(State));
-	strcpy(state->pwd, "./data/");
+	strcpy(state->pwd, BASEFOLDER);
 
 	char buffer[BSIZE];
 	while (1) {
