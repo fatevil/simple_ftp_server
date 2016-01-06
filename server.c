@@ -13,7 +13,7 @@
 
 int sockfd, newsockfd, port = 0, n;
 socklen_t clilen;
-char buffer[256];
+char buffer[BSIZE];
 struct sockaddr_in serv_addr, cli_addr;
 pid_t pid;
 
@@ -80,24 +80,24 @@ void communicateWithCmd()
 	strcpy(state->pwd, BASEFOLDER);
 
 	while (1) {
-		bzero(buffer, 256);
-		fgets(buffer, 255, stdin);
+		bzero(buffer, BSIZE);
+		fgets(buffer, BSIZE - 1, stdin);
 
 		parseCommand(buffer, cmd);
 
-		bzero(buffer, 256);
+		bzero(buffer, BSIZE);
 		handleCommand(cmd, buffer, state, BSIZE);
-		printf("lS:     %s \n", buffer);
+		printf("local S:     %s \n", buffer);
 	}
 }
 
 void communicateWithClient(int newsockfd)
 {
+	char buffer[BSIZE];
 	Command* cmd = malloc(sizeof(Command));
 	State* state = malloc(sizeof(State));
 	strcpy(state->pwd, BASEFOLDER);
 
-	char buffer[BSIZE];
 	while (1) {
 		bzero(cmd->arg, 100);
 		bzero(cmd->command, 5);
@@ -113,7 +113,7 @@ void communicateWithClient(int newsockfd)
 
 		/*  Handle client text input  */
 		parseCommand(buffer, cmd);
-		bzero(buffer, 256);
+		bzero(buffer, BSIZE);
 		handleCommand(cmd, buffer, state, BSIZE);
 
 		/* Send back response */
