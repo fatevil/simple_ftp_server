@@ -19,3 +19,4 @@ void executeCD(Command* command, char buffer[], State* state, int arrayLength);
 void executeCDUP(Command* command, char buffer[], State* state, int arrayLength);
 void executeMKD(Command* command, char buffer[], State* state, int arrayLength);
 void executePWD(Command* command, char buffer[], State* state, int arrayLength);
+void executeLS(Command* command, char buffer[], State* state, int arrayLength);

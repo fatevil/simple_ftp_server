@@ -23,6 +23,8 @@ void handleCommand(Command* command, char buffer[], State* state, int arrayLengt
 		executeCD(command, buffer, state, arrayLength);
 	} else if (strcmp(command->command, "pwd") == 0) {
 		executePWD(command, buffer, state, arrayLength);
+	} else if (strcmp(command->command, "ls") == 0) {
+		executeLS(command, buffer, state, arrayLength);
 	} else if (strcmp(command->command, "cdup") == 0) {
 		executeCDUP(command, buffer, state, arrayLength);
 	} else {
@@ -128,4 +130,27 @@ void executePWD(Command* command, char buffer[], State* state, int arrayLength)
 	strcat(message, state->pwd);
 	strcat(message, "\n");
 	setResponse(100, message, buffer);
+}
+
+void executeLS(Command* command, char buffer[], State* state, int arrayLength)
+{
+	DIR* dir;
+	struct dirent* ent;
+	if ((dir = opendir(state->pwd)) != NULL) {
+		char message[256] = "";
+		/* print all the files and directories within directory */
+		while ((ent = readdir(dir)) != NULL) {
+			if (strcmp(ent->d_name, ".") != 0 && strcmp(ent->d_name, "..") != 0) {
+				strcat(message, ent->d_name);
+				strcat(message, " ");
+			}
+		}
+		closedir(dir);
+
+		setResponse(100, message, buffer);
+	} else {
+		/* could not open directory */
+		char message[] = "Couldn't use ls!";
+		setResponse(300, message, buffer);
+	}
 }
