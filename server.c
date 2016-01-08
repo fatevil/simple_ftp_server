@@ -11,7 +11,7 @@
 #include "command.h"
 #include "util.h"
 
-int sockfd, newsockfd, port = 0, n;
+int sockfd, newsockfd, port, n;
 socklen_t clilen;
 char buffer[BSIZE];
 struct sockaddr_in serv_addr, cli_addr;
@@ -66,7 +66,6 @@ int main(int argc, char* argv[])
 			close(newsockfd);
 		}
 	}
-	printf("doing 4");
 	close(newsockfd);
 	close(sockfd);
 	return 0;
@@ -78,6 +77,7 @@ void communicateWithCmd()
 	Command* cmd = malloc(sizeof(Command));
 	State* state = malloc(sizeof(State));
 	strcpy(state->pwd, BASEFOLDER);
+	state->loggedIn = 1;
 
 	while (1) {
 		bzero(buffer, BSIZE);
@@ -85,7 +85,6 @@ void communicateWithCmd()
 
 		parseCommand(buffer, cmd);
 
-		bzero(buffer, BSIZE);
 		handleCommand(cmd, buffer, state, BSIZE);
 		printf("local: %s \n", buffer);
 	}
@@ -97,31 +96,29 @@ void communicateWithClient(int newsockfd)
 	Command* cmd = malloc(sizeof(Command));
 	State* state = malloc(sizeof(State));
 	strcpy(state->pwd, BASEFOLDER);
+	state->keepConnection = newsockfd;
+
+	strcpy(buffer, "220 Hi there! \n");
+	/*Send back response*/
+	writeMessage(newsockfd, buffer);
 
 	while (1) {
-		bzero(cmd->arg, 100);
-		bzero(cmd->command, 5);
+		if (state->keepConnection == 0) {
+			close(newsockfd);
+			exit(0);
+		}
+		bzeroCommand(cmd);
 		bzero(buffer, BSIZE);
 
-		/*  Read client text input */
-		n = read(newsockfd, buffer, BSIZE - 1);
-		if (n < 0) {
-			error("ERROR reading from socket");
-		}
-		printf("C:    %s", buffer);
-		//			system(buffer);
+		/*Wait and read client*/
+		readMessage(newsockfd, buffer);
 
 		/*  Handle client text input  */
 		parseCommand(buffer, cmd);
-		bzero(buffer, BSIZE);
 		handleCommand(cmd, buffer, state, BSIZE);
 
-		/* Send back response */
-		n = write(newsockfd, buffer, 60);
-		if (n < 0) {
-			error("ERROR writing to socket");
-		}
-		printf("S:     %s \n", buffer);
+		/*Send back response*/
+		writeMessage(newsockfd, buffer);
 	}
 }
 void setupSocketAdresse()

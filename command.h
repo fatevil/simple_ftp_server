@@ -1,10 +1,5 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
 
 typedef struct Command
 {
@@ -14,9 +9,14 @@ typedef struct Command
 
 void parseCommand(char* cmdstring, Command* cmd);
 void handleCommand(Command* command, char* string, State* state, int arrayLength);
-void setResponse(int code, char message[], char buffer[]);
+void setResponseMessage(int code, char message[], char buffer[]);
 void executeCD(Command* command, char buffer[], State* state, int arrayLength);
 void executeCDUP(Command* command, char buffer[], State* state, int arrayLength);
 void executeMKD(Command* command, char buffer[], State* state, int arrayLength);
-void executePWD(Command* command, char buffer[], State* state, int arrayLength);
+void executeLIST(Command* command, char buffer[], State* state, int arrayLength);
 void executeLS(Command* command, char buffer[], State* state, int arrayLength);
+void executeUSER(Command* command, char buffer[], State* state, int arrayLength);
+void executePASS(Command* command, char buffer[], State* state, int arrayLength);
+void executeSYST(Command* command, char buffer[], State* state, int arrayLength);
+void executeQUIT(Command* command, char buffer[], State* state, int arrayLength);
+void bzeroCommand(Command* cmd);

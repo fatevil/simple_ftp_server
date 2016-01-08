@@ -1,42 +1,48 @@
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/stat.h>
-#include <netinet/in.h>
-#include <sys/types.h>
-#include <dirent.h>
+#include <string.h>   //bzero a dalsi
+#include <dirent.h>   //dir
+#include <fcntl.h>    //open
+#include <sys/stat.h> //mkdir
 #include "connection.h"
 #include "command.h"
 #include "util.h"
 
 void handleCommand(Command* command, char buffer[], State* state, int arrayLength)
 {
+	bzero(buffer, BSIZE);
 
-	/*not sure, jestli pak bude fungovat CDUP - chtel jsem jen demonstrovat, jak pristupovat k prikazum a vracet
-	 * zpravy... da se to dal rozhazet do metod a treba pouzit USECASE*/
-	if (strcmp(command->command, "mkd") == 0) {
+	if (strcmp(command->command, "MKD") == 0) {
 		executeMKD(command, buffer, state, arrayLength);
-	} else if (strcmp(command->command, "cd") == 0) {
+	} else if (strcmp(command->command, "SYST") == 0) {
+		executeSYST(command, buffer, state, arrayLength);
+	} else if (strcmp(command->command, "USER") == 0) {
+		executeUSER(command, buffer, state, arrayLength);
+	} else if (strcmp(command->command, "PASS") == 0) {
+		executePASS(command, buffer, state, arrayLength);
+	} else if (strcmp(command->command, "CWD") == 0) {
 		executeCD(command, buffer, state, arrayLength);
-	} else if (strcmp(command->command, "pwd") == 0) {
-		executePWD(command, buffer, state, arrayLength);
-	} else if (strcmp(command->command, "ls") == 0) {
+	} else if (strcmp(command->command, "PWD") == 0) {
+		executeLIST(command, buffer, state, arrayLength);
+	} else if (strcmp(command->command, "LIST") == 0) {
 		executeLS(command, buffer, state, arrayLength);
-	} else if (strcmp(command->command, "cdup") == 0) {
+	} else if (strcmp(command->command, "CDUP") == 0) {
 		executeCDUP(command, buffer, state, arrayLength);
+	} else if (strcmp(command->command, "QUIT") == 0) {
+		executeQUIT(command, buffer, state, arrayLength);
 	} else {
-		setResponse(300, "Wrong command!", buffer);
+		setResponseMessage(300, "500 Wrong command!\n", buffer);
 	}
+}
+void bzeroCommand(Command* cmd)
+{
+	bzero(cmd->arg, 100);
+	bzero(cmd->command, 5);
 }
 
 /*CODE DOESNT WORK PROPERLY YET*/
-void setResponse(int code, char message[], char buffer[])
+void setResponseMessage(int code, char message[], char buffer[])
 {
 	strcpy(buffer, message);
-	// memcpy(buffer, (char*)&code, sizeof(int));
 }
 
 /*READS ONLY TWO STRINGS, third string is ignored*/
@@ -50,7 +56,7 @@ void parseCommand(char* cmdstring, Command* command)
 void executeCDUP(Command* command, char buffer[], State* state, int arrayLength)
 {
 	if (strcmp(state->pwd, BASEFOLDER) == 0) {
-		setResponse(100, "You can't cdup main directory!", buffer);
+		setResponseMessage(100, "You can't cdup main directory!\n", buffer);
 	} else {
 		int i;
 		int del = 0;
@@ -66,7 +72,7 @@ void executeCDUP(Command* command, char buffer[], State* state, int arrayLength)
 				char message[] = "Current folder: ";
 				strcat(message, state->pwd);
 				strcat(message, "\n");
-				setResponse(100, message, buffer);
+				setResponseMessage(100, message, buffer);
 				return;
 			} else if (del == 1) {
 				state->pwd[i] = '\0';
@@ -86,10 +92,10 @@ void executeMKD(Command* command, char buffer[], State* state, int arrayLength)
 		char message[] = "You have just created folder ";
 		strcat(message, dir);
 		strcat(message, "\n");
-		setResponse(100, message, buffer);
+		setResponseMessage(100, message, buffer);
 	} else {
 		char message[] = "You haven't created anything!\n";
-		setResponse(100, message, buffer);
+		setResponseMessage(100, message, buffer);
 	}
 }
 
@@ -99,7 +105,7 @@ void executeCD(Command* command, char buffer[], State* state, int arrayLength)
 		char message[] = "No change. Current folder: ";
 		strcat(message, state->pwd);
 		strcat(message, "\n");
-		setResponse(100, message, buffer);
+		setResponseMessage(100, message, buffer);
 		return;
 	}
 
@@ -116,20 +122,20 @@ void executeCD(Command* command, char buffer[], State* state, int arrayLength)
 		char message[] = "Current folder: ";
 		strcat(message, state->pwd);
 		strcat(message, "\n");
-		setResponse(100, message, buffer);
+		setResponseMessage(100, message, buffer);
 	} else if (dir == NULL) {
 		/* Directory does not exist. */
 		char message[] = "It doesnt exist!\n";
-		setResponse(100, message, buffer);
+		setResponseMessage(100, message, buffer);
 	}
 }
 
-void executePWD(Command* command, char buffer[], State* state, int arrayLength)
+void executeLIST(Command* command, char buffer[], State* state, int arrayLength)
 {
 	char message[] = "Current folder: ";
 	strcat(message, state->pwd);
 	strcat(message, "\n");
-	setResponse(100, message, buffer);
+	setResponseMessage(100, message, buffer);
 }
 
 void executeLS(Command* command, char buffer[], State* state, int arrayLength)
@@ -147,10 +153,37 @@ void executeLS(Command* command, char buffer[], State* state, int arrayLength)
 		}
 		closedir(dir);
 
-		setResponse(100, message, buffer);
+		setResponseMessage(100, message, buffer);
 	} else {
 		/* could not open directory */
-		char message[] = "Couldn't use ls!";
-		setResponse(300, message, buffer);
+		char message[] = "Couldn't use ls!\n";
+		setResponseMessage(300, message, buffer);
 	}
+}
+
+void executeUSER(Command* command, char buffer[], State* state, int arrayLength)
+{
+	state->loggedIn = 1;
+	char message[] = "331 Username ok. Now password. \n";
+	setResponseMessage(331, message, buffer);
+}
+
+void executePASS(Command* command, char buffer[], State* state, int arrayLength)
+{
+	state->loggedIn = 1;
+	char message[] = "230 You're succesfuly logged in!\n";
+	setResponseMessage(230, message, buffer);
+}
+
+void executeSYST(Command* command, char buffer[], State* state, int arrayLength)
+{
+	char message[] = "215 UNIX Type: L8\n";
+	setResponseMessage(230, message, buffer);
+}
+
+void executeQUIT(Command* command, char buffer[], State* state, int arrayLength)
+{
+	state->connection = 0;
+	char message[] = "221 Good bye, I hope we will meet again! \n";
+	setResponseMessage(230, message, buffer);
 }
