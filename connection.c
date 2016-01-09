@@ -30,3 +30,48 @@ void readMessage(int socket, char buffer[])
 	}
 	printf("C:    %s", buffer);
 }
+
+void startActiveModeDataConnection(int port)
+{
+	//	sockfd = socket(AF_INET, SOCK_STREAM, 0);
+	//	if (sockfd < 0) {
+	//		error("ERROR opening socket");
+	//	}
+	//
+	//	server = gethostbyname(argv[1]);
+	//	if (server == NULL) {
+	//		fprintf(stderr, "ERROR, no such host\n");
+	//		exit(0);
+	//	}
+	//
+	//	setupSocketAdresse();
+	//
+	//	setupConnection();
+	//
+	//	printf("Connection established on port  %d.\n", port);
+}
+
+int create_socket(int port)
+{
+	int sock;
+	int reuse = 1;
+
+	/* Server addess */
+	struct sockaddr_in server_address =
+	    (struct sockaddr_in) { AF_INET, htons(port), (struct in_addr) { INADDR_ANY } };
+
+	if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+		error("ERROR on creating socket");
+	}
+
+	/* Address can be reused instantly after program exits */
+	setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof reuse);
+
+	/* Bind socket to server address */
+	if (bind(sock, (struct sockaddr*)&server_address, sizeof(server_address)) < 0) {
+		error("ERROR on binding");
+	}
+
+	listen(sock, 5);
+	return sock;
+}

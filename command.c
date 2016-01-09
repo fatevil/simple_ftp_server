@@ -183,7 +183,15 @@ void executeSYST(Command* command, char buffer[], State* state, int arrayLength)
 
 void executeQUIT(Command* command, char buffer[], State* state, int arrayLength)
 {
-	state->connection = 0;
+	state->keepConnection = 0;
 	char message[] = "221 Good bye, I hope we will meet again! \n";
+	setResponseMessage(230, message, buffer);
+}
+
+void executePORT(Command* command, char buffer[], State* state, int arrayLength)
+{
+	// state->
+
+	char message[] = "200 PORT command not supported yet! \n";
 	setResponseMessage(230, message, buffer);
 }

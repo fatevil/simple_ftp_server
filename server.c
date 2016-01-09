@@ -14,11 +14,8 @@
 int sockfd, newsockfd, port, n;
 socklen_t clilen;
 char buffer[BSIZE];
-struct sockaddr_in serv_addr, cli_addr;
+struct sockaddr_in cli_addr;
 pid_t pid;
-
-void setupSocketAdresse();
-void bindSocket();
 
 int main(int argc, char* argv[])
 {
@@ -27,14 +24,8 @@ int main(int argc, char* argv[])
 		exit(1);
 	}
 	port = atoi(argv[1]);
-	sockfd = socket(AF_INET, SOCK_STREAM, 0);
-	if (sockfd < 0) {
-		error("ERROR opening socket");
-	}
-	setupSocketAdresse();
 
-	bindSocket();
-
+	sockfd = create_socket(port);
 	pid = fork();
 	if (pid == 0) { // child recieving local input
 
@@ -48,7 +39,6 @@ int main(int argc, char* argv[])
 	clilen = sizeof(cli_addr);
 	while (1) {
 		newsockfd = accept(sockfd, (struct sockaddr*)&cli_addr, &clilen);
-
 		printf("Connection established!\n");
 		if (newsockfd < 0) {
 			error("ERROR on accept");
@@ -120,19 +110,4 @@ void communicateWithClient(int newsockfd)
 		/*Send back response*/
 		writeMessage(newsockfd, buffer);
 	}
-}
-void setupSocketAdresse()
-{
-	bzero((char*)&serv_addr, sizeof(serv_addr));
-	serv_addr.sin_family = AF_INET;
-	serv_addr.sin_addr.s_addr = INADDR_ANY;
-	serv_addr.sin_port = htons(port);
-}
-
-void bindSocket()
-{
-	if (bind(sockfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0) {
-		error("ERROR on binding");
-	}
-	listen(sockfd, 5);
 }
