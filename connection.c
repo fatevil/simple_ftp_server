@@ -35,7 +35,7 @@ void startActiveModeDataConnection(int port)
 {
 }
 
-int createSocket(int port)
+int createListeningSocket(int port)
 {
 	int sock;
 	int reuse = 1;

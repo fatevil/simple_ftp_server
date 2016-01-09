@@ -35,7 +35,7 @@ typedef struct State
 
 } State;
 
-int createSocket(int port);
+int createListeningSocket(int port);
 void communicateWithClient(int newsockfd);
 void communicateWithCmd();
 void writeMessage(int socket, char buffer[]);
