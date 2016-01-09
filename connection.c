@@ -33,25 +33,9 @@ void readMessage(int socket, char buffer[])
 
 void startActiveModeDataConnection(int port)
 {
-	//	sockfd = socket(AF_INET, SOCK_STREAM, 0);
-	//	if (sockfd < 0) {
-	//		error("ERROR opening socket");
-	//	}
-	//
-	//	server = gethostbyname(argv[1]);
-	//	if (server == NULL) {
-	//		fprintf(stderr, "ERROR, no such host\n");
-	//		exit(0);
-	//	}
-	//
-	//	setupSocketAdresse();
-	//
-	//	setupConnection();
-	//
-	//	printf("Connection established on port  %d.\n", port);
 }
 
-int create_socket(int port)
+int createSocket(int port)
 {
 	int sock;
 	int reuse = 1;

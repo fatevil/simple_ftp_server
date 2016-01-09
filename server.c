@@ -25,7 +25,7 @@ int main(int argc, char* argv[])
 	}
 	port = atoi(argv[1]);
 
-	sockfd = create_socket(port);
+	sockfd = createSocket(port);
 	pid = fork();
 	if (pid == 0) { // child recieving local input
 
