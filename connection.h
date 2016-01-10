@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <netdb.h>
 
 #define BSIZE 256
 #define BASEFOLDER "./data/"
@@ -12,6 +13,16 @@ typedef struct Message
 	char pwd[100];
 
 } Message;
+
+typedef struct ServerAdresse
+{
+	/* IP adresse of given server*/
+	char* addresse;
+
+	/* port  on which given server listens*/
+	int port;
+
+} ServerAdresse;
 
 typedef struct State
 {
@@ -29,14 +40,15 @@ typedef struct State
 	/* Passive, none and active mode */
 	int mode;
 
-	/* For active connection this is the client's listening data port.
-	 * For passive mode this is the server's listening data port. */
-	int dataPort;
+	/* Only for the active mode - keeps ip adresse and port of listening remote server. */
+	ServerAdresse* dataServerAdresse;
 
 } State;
 
+int createSpeakingSocket(struct hostent* server, int port);
 int createListeningSocket(int port);
 void communicateWithClient(int newsockfd);
 void communicateWithCmd();
 void writeMessage(int socket, char buffer[]);
 void readMessage(int socket, char buffer[]);
+int startActiveModeDataConnection(struct hostent* server, int port);
