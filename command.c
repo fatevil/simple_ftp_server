@@ -8,7 +8,7 @@
 #include <netdb.h>        //hostent
 #include <unistd.h>       //access
 #include <sys/sendfile.h> //sendfile
-
+#include <math.h>         //sprintf
 #include "connection.h"
 #include "command.h"
 #include "util.h"
@@ -46,6 +46,8 @@ void handleCommand(Command* command, char buffer[], State* state)
 		executeNOOP(command, buffer, state);
 	} else if (strcmp(command->command, "NOOP") == 0) {
 		executeNOOP(command, buffer, state);
+	} else if (strcmp(command->command, "SIZE") == 0) {
+		executeSIZE(command, buffer, state);
 	} else {
 		setResponseMessage("500 Wrong command!\n", buffer);
 	}
@@ -53,7 +55,7 @@ void handleCommand(Command* command, char buffer[], State* state)
 void bzeroCommand(Command* cmd)
 {
 	bzero(cmd->arg, 100);
-	bzero(cmd->command, 5);
+	bzero(cmd->command, 10);
 }
 
 void setResponseMessage(char message[], char buffer[])
@@ -64,8 +66,7 @@ void setResponseMessage(char message[], char buffer[])
 /*READS ONLY TWO STRINGS, third string is ignored*/
 void parseCommand(char* cmdstring, Command* command)
 {
-	bzero(command->arg, 100);
-	bzero(command->command, 5);
+	bzeroCommand(command);
 	sscanf(cmdstring, "%s %s", command->command, command->arg);
 }
 
@@ -76,6 +77,8 @@ void executeCDUP(Command* command, char buffer[], State* state)
 	} else {
 		int i;
 		int del = 0;
+
+		printf("%s \n", state->pwd);
 		/*SIZE OF PWD = 100*/
 		for (i = strlen(state->pwd); i >= 0; i--) {
 			char currentChar = state->pwd[i];
@@ -83,7 +86,8 @@ void executeCDUP(Command* command, char buffer[], State* state)
 				state->pwd[i] = '\0';
 				del = 1;
 			} else if (currentChar == '/' && del == 1) {
-				char message[] = "212 Current folder: ";
+				char message[100];
+				strcpy(message, "212 Current folder: ");
 				strcat(message, state->pwd);
 				strcat(message, "\n");
 				setResponseMessage(message, buffer);
@@ -286,6 +290,11 @@ void executeTYPE(Command* command, char buffer[], State* state)
 
 void executeRMDIR(Command* command, char buffer[], State* state)
 {
+	//	if (strcmp(command->arg, "")) {
+	//		setResponseMessage("450 Argument missing! \n", buffer);
+	//		return;
+	//	}
+
 	char dirName[100];
 	strcpy(dirName, state->pwd);
 	strcat(dirName, command->arg);
@@ -300,4 +309,30 @@ void executeRMDIR(Command* command, char buffer[], State* state)
 void executeNOOP(Command* command, char buffer[], State* state)
 {
 	setResponseMessage("200 Nothing to be done.\n", buffer);
+}
+
+void executeSIZE(Command* command, char buffer[], State* state)
+{
+	int fd;
+	struct stat statBuffer;
+	char fileName[100];
+	strcpy(fileName, state->pwd);
+	strcat(fileName, command->arg);
+	size_t size;
+
+	if (access(fileName, R_OK) == 0 && (fd = open(fileName, O_RDONLY))) {
+		fstat(fd, &statBuffer);
+	} else {
+		setResponseMessage("450 File can't be accessed! \n", buffer);
+		return;
+	}
+
+	size = statBuffer.st_size;
+
+	close(fd);
+
+	char message[100];
+	sprintf(message, "The size is - %d  - bytes!\n", (int)size);
+
+	setResponseMessage(message, buffer);
 }

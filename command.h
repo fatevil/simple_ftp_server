@@ -3,7 +3,7 @@
 
 typedef struct Command
 {
-	char command[5];
+	char command[10];
 	char arg[100];
 } Command;
 
@@ -24,4 +24,5 @@ void executeRETR(Command* command, char buffer[], State* state);
 void executeTYPE(Command* command, char buffer[], State* state);
 void executeRMDIR(Command* command, char buffer[], State* state);
 void executeNOOP(Command* command, char buffer[], State* state);
+void executeSIZE(Command* command, char buffer[], State* state);
 void bzeroCommand(Command* cmd);
