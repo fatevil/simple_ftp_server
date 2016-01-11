@@ -34,14 +34,8 @@ void readMessage(int socket, char buffer[])
 
 int startActiveModeDataConnection(struct hostent* server, int port)
 {
-	char buffer[BSIZE];
 	int socket;
 	socket = createSpeakingSocket(server, port);
-
-	int n = read(socket, buffer, BSIZE - 1);
-	printf("%s \n", buffer);
-	n = write(socket, buffer, BSIZE - 1);
-	printf("%s responded \n", buffer);
 
 	return socket;
 }

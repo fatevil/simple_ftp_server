@@ -75,7 +75,7 @@ void communicateWithCmd()
 
 		parseCommand(buffer, cmd);
 
-		handleCommand(cmd, buffer, state, BSIZE);
+		handleCommand(cmd, buffer, state);
 		printf("local: %s \n", buffer);
 	}
 }
@@ -105,7 +105,7 @@ void communicateWithClient(int newsockfd)
 
 		/*  Handle client text input  */
 		parseCommand(buffer, cmd);
-		handleCommand(cmd, buffer, state, BSIZE);
+			handleCommand(cmd, buffer, state);
 
 		/*Send back response*/
 		writeMessage(newsockfd, buffer);

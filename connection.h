@@ -6,6 +6,8 @@
 #define UNSET_MODE 0
 #define ACTIVE_MODE 1
 #define PASSIVE_MODE 2
+#define ASCII 0
+#define BINARY 0
 
 typedef struct Message
 {
@@ -40,11 +42,11 @@ typedef struct State
 	/* Passive, none and active mode */
 	int mode;
 
-	/* Only for the active mode - keeps ip adresse and port of listening remote server. */
-	// ServerAdresse* dataServerAdresse;
-
 	/* Socket for data transmission*/
 	int socket;
+
+	/* 0 for ASCII,  1 for binary file transfer */
+	int type;
 
 } State;
 

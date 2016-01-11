@@ -13,33 +13,41 @@
 #include "command.h"
 #include "util.h"
 
-void handleCommand(Command* command, char buffer[], State* state, int arrayLength)
+void handleCommand(Command* command, char buffer[], State* state)
 {
 	bzero(buffer, BSIZE);
 	if (strcmp(command->command, "MKD") == 0) {
-		executeMKD(command, buffer, state, arrayLength);
+		executeMKD(command, buffer, state);
 	} else if (strcmp(command->command, "SYST") == 0) {
-		executeSYST(command, buffer, state, arrayLength);
+		executeSYST(command, buffer, state);
 	} else if (strcmp(command->command, "USER") == 0) {
-		executeUSER(command, buffer, state, arrayLength);
+		executeUSER(command, buffer, state);
 	} else if (strcmp(command->command, "PASS") == 0) {
-		executePASS(command, buffer, state, arrayLength);
+		executePASS(command, buffer, state);
 	} else if (strcmp(command->command, "CWD") == 0) {
-		executeCD(command, buffer, state, arrayLength);
+		executeCD(command, buffer, state);
 	} else if (strcmp(command->command, "PWD") == 0) {
-		executeLIST(command, buffer, state, arrayLength);
+		executeLIST(command, buffer, state);
 	} else if (strcmp(command->command, "LIST") == 0) {
-		executeLS(command, buffer, state, arrayLength);
+		executeLS(command, buffer, state);
 	} else if (strcmp(command->command, "CDUP") == 0) {
-		executeCDUP(command, buffer, state, arrayLength);
+		executeCDUP(command, buffer, state);
 	} else if (strcmp(command->command, "QUIT") == 0) {
-		executeQUIT(command, buffer, state, arrayLength);
+		executeQUIT(command, buffer, state);
 	} else if (strcmp(command->command, "PORT") == 0) {
-		executePORT(command, buffer, state, arrayLength);
+		executePORT(command, buffer, state);
 	} else if (strcmp(command->command, "RETR") == 0) {
-		executeRETR(command, buffer, state, arrayLength);
+		executeRETR(command, buffer, state);
+	} else if (strcmp(command->command, "TYPE") == 0) {
+		executeTYPE(command, buffer, state);
+	} else if (strcmp(command->command, "RMDIR") == 0) {
+		executeRMDIR(command, buffer, state);
+	} else if (strcmp(command->command, "") == 0) {
+		executeNOOP(command, buffer, state);
+	} else if (strcmp(command->command, "NOOP") == 0) {
+		executeNOOP(command, buffer, state);
 	} else {
-		setResponseMessage(300, "500 Wrong command!\n", buffer);
+		setResponseMessage("500 Wrong command!\n", buffer);
 	}
 }
 void bzeroCommand(Command* cmd)
@@ -48,8 +56,7 @@ void bzeroCommand(Command* cmd)
 	bzero(cmd->command, 5);
 }
 
-/*CODE DOESNT WORK PROPERLY YET*/
-void setResponseMessage(int code, char message[], char buffer[])
+void setResponseMessage(char message[], char buffer[])
 {
 	strcpy(buffer, message);
 }
@@ -62,10 +69,10 @@ void parseCommand(char* cmdstring, Command* command)
 	sscanf(cmdstring, "%s %s", command->command, command->arg);
 }
 
-void executeCDUP(Command* command, char buffer[], State* state, int arrayLength)
+void executeCDUP(Command* command, char buffer[], State* state)
 {
 	if (strcmp(state->pwd, BASEFOLDER) == 0) {
-		setResponseMessage(100, "415 You can't cdup main directory!\n", buffer);
+		setResponseMessage("415 You can't cdup main directory!\n", buffer);
 	} else {
 		int i;
 		int del = 0;
@@ -79,7 +86,7 @@ void executeCDUP(Command* command, char buffer[], State* state, int arrayLength)
 				char message[] = "212 Current folder: ";
 				strcat(message, state->pwd);
 				strcat(message, "\n");
-				setResponseMessage(100, message, buffer);
+				setResponseMessage(message, buffer);
 				return;
 			} else if (del == 1) {
 				state->pwd[i] = '\0';
@@ -88,7 +95,7 @@ void executeCDUP(Command* command, char buffer[], State* state, int arrayLength)
 	}
 }
 
-void executeMKD(Command* command, char buffer[], State* state, int arrayLength)
+void executeMKD(Command* command, char buffer[], State* state)
 {
 
 	char dir[200];
@@ -98,20 +105,20 @@ void executeMKD(Command* command, char buffer[], State* state, int arrayLength)
 		char message[] = "200 You have just created folder ";
 		strcat(message, dir);
 		strcat(message, "\n");
-		setResponseMessage(100, message, buffer);
+		setResponseMessage(message, buffer);
 	} else {
 		char message[] = "450 You haven't created anything!\n";
-		setResponseMessage(100, message, buffer);
+		setResponseMessage(message, buffer);
 	}
 }
 
-void executeCD(Command* command, char buffer[], State* state, int arrayLength)
+void executeCD(Command* command, char buffer[], State* state)
 {
 	if (strlen(command->arg) == 0) {
 		char message[] = "212 No change. Current folder: ";
 		strcat(message, state->pwd);
 		strcat(message, "\n");
-		setResponseMessage(100, message, buffer);
+		setResponseMessage(message, buffer);
 		return;
 	}
 
@@ -128,23 +135,23 @@ void executeCD(Command* command, char buffer[], State* state, int arrayLength)
 		char message[] = "212 Current folder: ";
 		strcat(message, state->pwd);
 		strcat(message, "\n");
-		setResponseMessage(100, message, buffer);
+		setResponseMessage(message, buffer);
 	} else if (dir == NULL) {
 		/* Directory does not exist. */
 		char message[] = "212 It doesnt exist!\n";
-		setResponseMessage(100, message, buffer);
+		setResponseMessage(message, buffer);
 	}
 }
 
-void executeLIST(Command* command, char buffer[], State* state, int arrayLength)
+void executeLIST(Command* command, char buffer[], State* state)
 {
 	char message[] = "212 Current folder: ";
 	strcat(message, state->pwd);
 	strcat(message, "\n");
-	setResponseMessage(100, message, buffer);
+	setResponseMessage(message, buffer);
 }
 
-void executeLS(Command* command, char buffer[], State* state, int arrayLength)
+void executeLS(Command* command, char buffer[], State* state)
 {
 	DIR* dir;
 	struct dirent* ent;
@@ -159,49 +166,49 @@ void executeLS(Command* command, char buffer[], State* state, int arrayLength)
 		}
 		closedir(dir);
 
-		setResponseMessage(100, message, buffer);
+		setResponseMessage(message, buffer);
 	} else {
 		/* could not open directory */
 		char message[] = "212 Couldn't use ls!\n";
-		setResponseMessage(300, message, buffer);
+		setResponseMessage(message, buffer);
 	}
 }
 
-void executeUSER(Command* command, char buffer[], State* state, int arrayLength)
+void executeUSER(Command* command, char buffer[], State* state)
 {
 	state->loggedIn = 1;
 	char message[] = "331 Username ok. Now password. \n";
-	setResponseMessage(331, message, buffer);
+	setResponseMessage(message, buffer);
 }
 
-void executePASS(Command* command, char buffer[], State* state, int arrayLength)
+void executePASS(Command* command, char buffer[], State* state)
 {
 	state->loggedIn = 1;
 	char message[] = "230 You're succesfuly logged in!\n";
-	setResponseMessage(230, message, buffer);
+	setResponseMessage(message, buffer);
 }
 
-void executeSYST(Command* command, char buffer[], State* state, int arrayLength)
+void executeSYST(Command* command, char buffer[], State* state)
 {
 	char message[] = "215 UNIX Type: L8\n";
-	setResponseMessage(230, message, buffer);
+	setResponseMessage(message, buffer);
 }
 
-void executeQUIT(Command* command, char buffer[], State* state, int arrayLength)
+void executeQUIT(Command* command, char buffer[], State* state)
 {
 	state->keepConnection = 0;
 	char message[] = "221 Good bye, I hope we will meet again! \n";
-	setResponseMessage(230, message, buffer);
+	setResponseMessage(message, buffer);
 }
 
-void executePORT(Command* command, char buffer[], State* state, int arrayLength)
+void executePORT(Command* command, char buffer[], State* state)
 {
 
 	ServerAdresse* serverAdresse = malloc(sizeof(ServerAdresse));
 	resolvePortArgument(command->arg, serverAdresse);
 	if (serverAdresse->port <= 0 || serverAdresse->addresse == NULL) {
 		char message[] = "230 Couldn't read PORT arguments! \n";
-		setResponseMessage(230, message, buffer);
+		setResponseMessage(message, buffer);
 		return;
 	}
 	printf("Resolved IP: %s & PORT: %d \n", serverAdresse->addresse, serverAdresse->port);
@@ -209,17 +216,17 @@ void executePORT(Command* command, char buffer[], State* state, int arrayLength)
 	struct hostent* server = gethostbyname(serverAdresse->addresse);
 	if (server == NULL) {
 		char message[] = "425 Couldnt connect to your listener! \n";
-		setResponseMessage(230, message, buffer);
+		setResponseMessage(message, buffer);
 	}
 
 	int socket;
 
 	if ((socket = startActiveModeDataConnection(server, serverAdresse->port)) > 0) {
 		char message[] = "230 Succesfully established data connection! \n";
-		setResponseMessage(230, message, buffer);
+		setResponseMessage(message, buffer);
 	} else {
 		char message[] = "425 Couldnt connect to your listener! \n";
-		setResponseMessage(230, message, buffer);
+		setResponseMessage(message, buffer);
 	}
 
 	state->socket = socket;
@@ -228,9 +235,9 @@ void executePORT(Command* command, char buffer[], State* state, int arrayLength)
 	free(serverAdresse);
 }
 
-void executeRETR(Command* command, char buffer[], State* state, int arrayLength)
+void executeRETR(Command* command, char buffer[], State* state)
 {
-	struct stat stat_buf;
+	struct stat statBuffer;
 	int fd;
 	off_t offset = 0;
 
@@ -239,27 +246,58 @@ void executeRETR(Command* command, char buffer[], State* state, int arrayLength)
 	strcat(fileName, command->arg);
 
 	if (access(fileName, R_OK) == 0 && (fd = open(fileName, O_RDONLY))) {
-		fstat(fd, &stat_buf);
+		fstat(fd, &statBuffer);
 	} else {
-		setResponseMessage(100, "450 File can't be accessed! \n", buffer);
+		setResponseMessage("450 File can't be accessed! \n", buffer);
 		return;
 	}
-	printf("gonna send %d \n", (int)stat_buf.st_size);
-	size_t size_to_send;
-	for (size_to_send = stat_buf.st_size; size_to_send > 0;) {
-		ssize_t sent = sendfile(state->socket, fd, &offset, (int)size_to_send);
+	printf("gonna send %d \n", (int)statBuffer.st_size);
+	size_t sizeToSend;
+	for (sizeToSend = statBuffer.st_size; sizeToSend > 0;) {
+		ssize_t sent = sendfile(state->socket, fd, &offset, (int)sizeToSend);
 		if (sent <= 0) {
-			setResponseMessage(100, "450 Didnt work out! \n", buffer);
+			setResponseMessage("450 Didnt work out! \n", buffer);
 			return;
 		}
 
 		offset += sent;
-		size_to_send -= sent;
+		sizeToSend -= sent;
 		printf("sent out %d \n", (int)sent);
 	}
 
 	close(state->socket);
 	close(fd);
 
-	setResponseMessage(100, "226 File send OK.\n", buffer);
+	setResponseMessage("226 File send OK.\n", buffer);
+}
+
+void executeTYPE(Command* command, char buffer[], State* state)
+{
+	if (strcmp(command->arg, "I") == 0) {
+		state->type = BINARY;
+		setResponseMessage("200 Type is set to BINARY! \n", buffer);
+	} else if (strcmp(command->arg, "A") == 0) {
+		state->type = ASCII;
+		setResponseMessage("200 Type is set ASCII! \n", buffer);
+	} else {
+		setResponseMessage("500 This argument is not supported! \n", buffer);
+	}
+}
+
+void executeRMDIR(Command* command, char buffer[], State* state)
+{
+	char dirName[100];
+	strcpy(dirName, state->pwd);
+	strcat(dirName, command->arg);
+
+	if (-1 == rmdir(dirName)) {
+		setResponseMessage("450 The directory is not empty! \n", buffer);
+	} else {
+		setResponseMessage("200 Directory succesfully removed! \n", buffer);
+	}
+}
+
+void executeNOOP(Command* command, char buffer[], State* state)
+{
+	setResponseMessage("200 Nothing to be done.\n", buffer);
 }
