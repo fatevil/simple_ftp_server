@@ -41,7 +41,10 @@ typedef struct State
 	int mode;
 
 	/* Only for the active mode - keeps ip adresse and port of listening remote server. */
-	ServerAdresse* dataServerAdresse;
+	// ServerAdresse* dataServerAdresse;
+
+	/* Socket for data transmission*/
+	int socket;
 
 } State;
 
@@ -52,3 +55,4 @@ void communicateWithCmd();
 void writeMessage(int socket, char buffer[]);
 void readMessage(int socket, char buffer[]);
 int startActiveModeDataConnection(struct hostent* server, int port);
+ssize_t sendFileOurWay(int out_fd, int in_fd, off_t* offset, size_t count);

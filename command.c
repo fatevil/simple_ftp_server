@@ -1,11 +1,14 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>     //bzero a dalsi
-#include <dirent.h>     //dir
-#include <fcntl.h>      //open
-#include <sys/stat.h>   //mkdir
-#include <sys/socket.h> //hostent
-#include <netdb.h>      //hostent
+#include <string.h>       //bzero a dalsi
+#include <dirent.h>       //dir
+#include <fcntl.h>        //open
+#include <sys/stat.h>     //mkdir
+#include <sys/socket.h>   //hostent
+#include <netdb.h>        //hostent
+#include <unistd.h>       //access
+#include <sys/sendfile.h> //sendfile
+
 #include "connection.h"
 #include "command.h"
 #include "util.h"
@@ -33,6 +36,8 @@ void handleCommand(Command* command, char buffer[], State* state, int arrayLengt
 		executeQUIT(command, buffer, state, arrayLength);
 	} else if (strcmp(command->command, "PORT") == 0) {
 		executePORT(command, buffer, state, arrayLength);
+	} else if (strcmp(command->command, "RETR") == 0) {
+		executeRETR(command, buffer, state, arrayLength);
 	} else {
 		setResponseMessage(300, "500 Wrong command!\n", buffer);
 	}
@@ -206,13 +211,55 @@ void executePORT(Command* command, char buffer[], State* state, int arrayLength)
 		char message[] = "425 Couldnt connect to your listener! \n";
 		setResponseMessage(230, message, buffer);
 	}
-	free(serverAdresse->addresse);
 
-	if (startActiveModeDataConnection(server, serverAdresse->port) > 0) {
+	int socket;
+
+	if ((socket = startActiveModeDataConnection(server, serverAdresse->port)) > 0) {
 		char message[] = "230 Succesfully established data connection! \n";
 		setResponseMessage(230, message, buffer);
 	} else {
 		char message[] = "425 Couldnt connect to your listener! \n";
 		setResponseMessage(230, message, buffer);
 	}
+
+	state->socket = socket;
+
+	free(serverAdresse->addresse);
+	free(serverAdresse);
+}
+
+void executeRETR(Command* command, char buffer[], State* state, int arrayLength)
+{
+	struct stat stat_buf;
+	int fd;
+	off_t offset = 0;
+
+	char fileName[100];
+	strcpy(fileName, state->pwd);
+	strcat(fileName, command->arg);
+
+	if (access(fileName, R_OK) == 0 && (fd = open(fileName, O_RDONLY))) {
+		fstat(fd, &stat_buf);
+	} else {
+		setResponseMessage(100, "450 File can't be accessed! \n", buffer);
+		return;
+	}
+	printf("gonna send %d \n", (int)stat_buf.st_size);
+	size_t size_to_send;
+	for (size_to_send = stat_buf.st_size; size_to_send > 0;) {
+		ssize_t sent = sendfile(state->socket, fd, &offset, (int)size_to_send);
+		if (sent <= 0) {
+			setResponseMessage(100, "450 Didnt work out! \n", buffer);
+			return;
+		}
+
+		offset += sent;
+		size_to_send -= sent;
+		printf("sent out %d \n", (int)sent);
+	}
+
+	close(state->socket);
+	close(fd);
+
+	setResponseMessage(100, "226 File send OK.\n", buffer);
 }
