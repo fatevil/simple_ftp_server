@@ -34,31 +34,50 @@ void readMessage(int socket, char buffer[])
 
 int startActiveModeDataConnection(struct hostent* server, int port)
 {
-	int socket;
-	socket = createSpeakingSocket(server, port);
-
-	return socket;
+	return createSpeakingSocket(server, port);
 }
 
-int createListeningSocket(int port)
+void startPassiveModeDataConnection(int* port, State* state)
+{
+	struct sockaddr_in cli_addr;
+	socklen_t clilen;
+	clilen = sizeof(cli_addr);
+
+	int sockfd = createListeningSocket(port);
+	//	pid_t pid;
+
+	//	pid = fork();
+
+	//	if (pid == 0) {
+	int newsockfd = accept(sockfd, (struct sockaddr*)&cli_addr, &clilen);
+	printf("Data connection established!\n");
+	if (newsockfd < 0) {
+		error("ERROR on accept");
+	}
+	state->socket = newsockfd;
+	printf("%d \n", state->socket);
+	//		exit(0);
+	//	}
+}
+
+int createListeningSocket(int* port)
 {
 	int sock;
 	int reuse = 1;
 
 	/* Server addess */
 	struct sockaddr_in server_address =
-	    (struct sockaddr_in) { AF_INET, htons(port), (struct in_addr) { INADDR_ANY } };
-
+	    (struct sockaddr_in) { AF_INET, htons(*port), (struct in_addr) { INADDR_ANY } };
 	if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 		error("ERROR on creating socket");
 	}
-
 	/* Address can be reused instantly after program exits */
 	setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof reuse);
-
 	/* Bind socket to server address */
-	if (bind(sock, (struct sockaddr*)&server_address, sizeof(server_address)) < 0) {
-		error("ERROR on binding");
+	while (bind(sock, (struct sockaddr*)&server_address, sizeof(server_address)) < 0) {
+		//		error("ERROR on binding");
+		(*port)++;
+		server_address = (struct sockaddr_in) { AF_INET, htons(*port), (struct in_addr) { INADDR_ANY } };
 	}
 
 	listen(sock, 5);

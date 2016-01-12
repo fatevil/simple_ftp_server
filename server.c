@@ -7,11 +7,12 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <sys/mman.h>
 #include "connection.h"
 #include "command.h"
 #include "util.h"
 
-int sockfd, newsockfd, port, n;
+int sockfd, newsockfd, n;
 socklen_t clilen;
 char buffer[BSIZE];
 struct sockaddr_in cli_addr;
@@ -23,9 +24,8 @@ int main(int argc, char* argv[])
 		fprintf(stderr, "ERROR, no port provided\n");
 		exit(1);
 	}
-	port = atoi(argv[1]);
-
-	sockfd = createListeningSocket(port);
+	int port = atoi(argv[1]);
+	sockfd = createListeningSocket(&port);
 	pid = fork();
 	if (pid == 0) { // child recieving local input
 
@@ -85,15 +85,17 @@ void communicateWithClient(int newsockfd)
 	char buffer[BSIZE];
 	Command* cmd = malloc(sizeof(Command));
 	State* state = malloc(sizeof(State));
+	state = mmap(state, sizeof(State*), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+
 	strcpy(state->pwd, BASEFOLDER);
-	state->keepConnection = newsockfd;
+	state->keepConnection = KEEP_CONNECTION;
 
 	strcpy(buffer, "220 Hi there! \n");
 	/*Send back response*/
 	writeMessage(newsockfd, buffer);
 
 	while (1) {
-		if (state->keepConnection == 0) {
+		if (state->keepConnection == CUT_CONNECTION) {
 			close(newsockfd);
 			exit(0);
 		}
@@ -105,7 +107,7 @@ void communicateWithClient(int newsockfd)
 
 		/*  Handle client text input  */
 		parseCommand(buffer, cmd);
-			handleCommand(cmd, buffer, state);
+		handleCommand(cmd, buffer, state);
 
 		/*Send back response*/
 		writeMessage(newsockfd, buffer);

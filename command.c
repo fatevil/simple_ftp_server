@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>       //bzero a dalsi
@@ -9,6 +10,8 @@
 #include <unistd.h>       //access
 #include <sys/sendfile.h> //sendfile
 #include <math.h>         //sprintf
+#include <fcntl.h>        //splice
+
 #include "connection.h"
 #include "command.h"
 #include "util.h"
@@ -27,7 +30,7 @@ void handleCommand(Command* command, char buffer[], State* state)
 	} else if (strcmp(command->command, "CWD") == 0) {
 		executeCD(command, buffer, state);
 	} else if (strcmp(command->command, "PWD") == 0) {
-		executeLIST(command, buffer, state);
+		executePWD(command, buffer, state);
 	} else if (strcmp(command->command, "LIST") == 0) {
 		executeLS(command, buffer, state);
 	} else if (strcmp(command->command, "CDUP") == 0) {
@@ -48,6 +51,12 @@ void handleCommand(Command* command, char buffer[], State* state)
 		executeNOOP(command, buffer, state);
 	} else if (strcmp(command->command, "SIZE") == 0) {
 		executeSIZE(command, buffer, state);
+	} else if (strcmp(command->command, "PASV") == 0) {
+		executePASV(command, buffer, state);
+	} else if (strcmp(command->command, "STOR") == 0) {
+		executeSTOR(command, buffer, state);
+	} else if (strcmp(command->command, "HELP") == 0) {
+		executeHELP(command, buffer, state);
 	} else {
 		setResponseMessage("500 Wrong command!\n", buffer);
 	}
@@ -78,7 +87,6 @@ void executeCDUP(Command* command, char buffer[], State* state)
 		int i;
 		int del = 0;
 
-		printf("%s \n", state->pwd);
 		/*SIZE OF PWD = 100*/
 		for (i = strlen(state->pwd); i >= 0; i--) {
 			char currentChar = state->pwd[i];
@@ -106,12 +114,12 @@ void executeMKD(Command* command, char buffer[], State* state)
 	strcpy(dir, state->pwd);
 	strcat(dir, command->arg);
 	if (mkdir(dir, S_IRWXU) == 0) {
-		char message[] = "200 You have just created folder ";
+		char message[100] = "200 You have just created folder ";
 		strcat(message, dir);
 		strcat(message, "\n");
 		setResponseMessage(message, buffer);
 	} else {
-		char message[] = "450 You haven't created anything!\n";
+		char message[100] = "450 You haven't created anything!\n";
 		setResponseMessage(message, buffer);
 	}
 }
@@ -119,7 +127,7 @@ void executeMKD(Command* command, char buffer[], State* state)
 void executeCD(Command* command, char buffer[], State* state)
 {
 	if (strlen(command->arg) == 0) {
-		char message[] = "212 No change. Current folder: ";
+		char message[100] = "212 No change. Current folder: ";
 		strcat(message, state->pwd);
 		strcat(message, "\n");
 		setResponseMessage(message, buffer);
@@ -136,20 +144,21 @@ void executeCD(Command* command, char buffer[], State* state)
 		closedir(dir);
 		strcat(state->pwd, command->arg);
 		strcat(state->pwd, "/");
-		char message[] = "212 Current folder: ";
+		char message[100] = "212 Current folder: ";
 		strcat(message, state->pwd);
 		strcat(message, "\n");
 		setResponseMessage(message, buffer);
 	} else if (dir == NULL) {
 		/* Directory does not exist. */
-		char message[] = "212 It doesnt exist!\n";
+		char message[100] = "212 It doesnt exist!\n";
 		setResponseMessage(message, buffer);
 	}
 }
 
-void executeLIST(Command* command, char buffer[], State* state)
+void executePWD(Command* command, char buffer[], State* state)
 {
-	char message[] = "212 Current folder: ";
+	char message[100];
+	strcpy(message, "212 Current folder: ");
 	strcat(message, state->pwd);
 	strcat(message, "\n");
 	setResponseMessage(message, buffer);
@@ -173,7 +182,8 @@ void executeLS(Command* command, char buffer[], State* state)
 		setResponseMessage(message, buffer);
 	} else {
 		/* could not open directory */
-		char message[] = "212 Couldn't use ls!\n";
+		char message[100];
+		strcpy(message, "212 Couldn't use ls!\n");
 		setResponseMessage(message, buffer);
 	}
 }
@@ -181,98 +191,31 @@ void executeLS(Command* command, char buffer[], State* state)
 void executeUSER(Command* command, char buffer[], State* state)
 {
 	state->loggedIn = 1;
-	char message[] = "331 Username ok. Now password. \n";
+	char message[100];
+	strcpy(message, "331 Username ok. Now password. \n");
 	setResponseMessage(message, buffer);
 }
 
 void executePASS(Command* command, char buffer[], State* state)
 {
 	state->loggedIn = 1;
-	char message[] = "230 You're succesfuly logged in!\n";
+	char message[100];
+	strcpy(message, "230 You're succesfuly logged in!\n");
 	setResponseMessage(message, buffer);
 }
 
 void executeSYST(Command* command, char buffer[], State* state)
 {
-	char message[] = "215 UNIX Type: L8\n";
+	char message[100];
+	strcpy(message, "215 UNIX Type: L8\n");
 	setResponseMessage(message, buffer);
 }
 
 void executeQUIT(Command* command, char buffer[], State* state)
 {
 	state->keepConnection = 0;
-	char message[] = "221 Good bye, I hope we will meet again! \n";
+	char message[100] = "221 Good bye, I hope we will meet again! \n";
 	setResponseMessage(message, buffer);
-}
-
-void executePORT(Command* command, char buffer[], State* state)
-{
-
-	ServerAdresse* serverAdresse = malloc(sizeof(ServerAdresse));
-	resolvePortArgument(command->arg, serverAdresse);
-	if (serverAdresse->port <= 0 || serverAdresse->addresse == NULL) {
-		char message[] = "230 Couldn't read PORT arguments! \n";
-		setResponseMessage(message, buffer);
-		return;
-	}
-	printf("Resolved IP: %s & PORT: %d \n", serverAdresse->addresse, serverAdresse->port);
-
-	struct hostent* server = gethostbyname(serverAdresse->addresse);
-	if (server == NULL) {
-		char message[] = "425 Couldnt connect to your listener! \n";
-		setResponseMessage(message, buffer);
-	}
-
-	int socket;
-
-	if ((socket = startActiveModeDataConnection(server, serverAdresse->port)) > 0) {
-		char message[] = "230 Succesfully established data connection! \n";
-		setResponseMessage(message, buffer);
-	} else {
-		char message[] = "425 Couldnt connect to your listener! \n";
-		setResponseMessage(message, buffer);
-	}
-
-	state->socket = socket;
-
-	free(serverAdresse->addresse);
-	free(serverAdresse);
-}
-
-void executeRETR(Command* command, char buffer[], State* state)
-{
-	struct stat statBuffer;
-	int fd;
-	off_t offset = 0;
-
-	char fileName[100];
-	strcpy(fileName, state->pwd);
-	strcat(fileName, command->arg);
-
-	if (access(fileName, R_OK) == 0 && (fd = open(fileName, O_RDONLY))) {
-		fstat(fd, &statBuffer);
-	} else {
-		setResponseMessage("450 File can't be accessed! \n", buffer);
-		return;
-	}
-	printf("gonna send %d \n", (int)statBuffer.st_size);
-	size_t sizeToSend;
-	for (sizeToSend = statBuffer.st_size; sizeToSend > 0;) {
-		ssize_t sent = sendfile(state->socket, fd, &offset, (int)sizeToSend);
-		if (sent <= 0) {
-			setResponseMessage("450 Didnt work out! \n", buffer);
-			return;
-		}
-
-		offset += sent;
-		sizeToSend -= sent;
-		printf("sent out %d \n", (int)sent);
-	}
-
-	close(state->socket);
-	close(fd);
-
-	setResponseMessage("226 File send OK.\n", buffer);
 }
 
 void executeTYPE(Command* command, char buffer[], State* state)
@@ -333,6 +276,149 @@ void executeSIZE(Command* command, char buffer[], State* state)
 
 	char message[100];
 	sprintf(message, "The size is - %d  - bytes!\n", (int)size);
+
+	setResponseMessage(message, buffer);
+}
+void executePORT(Command* command, char buffer[], State* state)
+{
+
+	ServerAdresse* serverAdresse = malloc(sizeof(ServerAdresse));
+	resolvePortArgument(command->arg, serverAdresse);
+	if (serverAdresse->port <= 0 || serverAdresse->addresse == NULL) {
+		char message[100] = "230 Couldn't read PORT arguments! \n";
+		setResponseMessage(message, buffer);
+		return;
+	}
+	printf("Resolved IP: %s & PORT: %d \n", serverAdresse->addresse, serverAdresse->port);
+
+	struct hostent* server = gethostbyname(serverAdresse->addresse);
+	if (server == NULL) {
+		char message[100] = "425 Couldnt connect to your listener! \n";
+		setResponseMessage(message, buffer);
+	}
+
+	int socket;
+
+	if ((socket = startActiveModeDataConnection(server, serverAdresse->port)) > 0) {
+		char message[100] = "230 Succesfully established data connection! \n";
+		setResponseMessage(message, buffer);
+	} else {
+		char message[100] = "425 Couldnt connect to your listener! \n";
+		setResponseMessage(message, buffer);
+	}
+	state->mode = ACTIVE_MODE;
+	state->socket = socket;
+
+	free(serverAdresse->addresse);
+	free(serverAdresse);
+}
+
+void executePASV(Command* command, char buffer[], State* state)
+{
+	if (state->socket != 0) {
+		close(state->socket);
+	}
+	int port = 8524;
+
+	startPassiveModeDataConnection(&port, state);
+	char message[100];
+	int p1 = (port / 256);
+	int p2 = (port % 256);
+	sprintf(message, "227 Entering Passive Mode (127,0,0,1,%d,%d) \n", p1, p2);
+	setResponseMessage(message, buffer);
+	state->mode = PASSIVE_MODE;
+}
+
+void executeRETR(Command* command, char buffer[], State* state)
+{
+	printf("%d \n", state->socket);
+
+	if (state->socket == 0) {
+		setResponseMessage("450 There's no data transfer connection! \n", buffer);
+		return;
+	}
+
+	if (state->mode == UNSET_MODE) {
+		setResponseMessage("450 First set the mode! \n", buffer);
+		return;
+	}
+
+	struct stat statBuffer;
+	int fd;
+	off_t offset = 0;
+
+	char fileName[100];
+	strcpy(fileName, state->pwd);
+	strcat(fileName, command->arg);
+
+	if (access(fileName, R_OK) == 0 && (fd = open(fileName, O_RDONLY))) {
+		fstat(fd, &statBuffer);
+	} else {
+		setResponseMessage("450 File can't be accessed! \n", buffer);
+		return;
+	}
+	size_t sizeToSend;
+	for (sizeToSend = statBuffer.st_size; sizeToSend > 0;) {
+		ssize_t sent = sendfile(state->socket, fd, &offset, (int)sizeToSend);
+		if (sent <= 0) {
+			close(state->socket);
+			close(fd);
+			setResponseMessage("450 Didnt work out! \n", buffer);
+			return;
+		}
+
+		offset += sent;
+		sizeToSend -= sent;
+		printf("We've sent out - %d  - bytes! \n", (int)sent);
+	}
+	state->mode = UNSET_MODE;
+	close(state->socket);
+	close(fd);
+
+	setResponseMessage("226 File send OK.\n", buffer);
+}
+
+void executeSTOR(Command* command, char buffer[], State* state)
+{
+	int fd;
+	int pipefd[2];
+	int res = 1;
+	const int buff_size = 8192;
+
+	char fileName[100];
+	strcpy(fileName, state->pwd);
+	strcat(fileName, command->arg);
+	FILE* fp = fopen(fileName, "w");
+
+	if (fp == NULL) {
+		error("ERROR opening file");
+	}
+	fd = fileno(fp);
+
+	if (pipe(pipefd) == -1) {
+		error("ERROR creating pipe");
+	}
+
+	while ((res = splice(state->socket, 0, pipefd[1], NULL, buff_size, SPLICE_F_MORE | SPLICE_F_MOVE)) > 0) {
+		splice(pipefd[0], NULL, fd, 0, buff_size, SPLICE_F_MORE | SPLICE_F_MOVE);
+	}
+
+	if (res == -1) {
+		error("ERROR on splice");
+	} else {
+		setResponseMessage("226 File send OK.\n", buffer);
+	}
+	close(state->socket);
+	close(fd);
+	fclose(fp);
+}
+void executeHELP(Command* command, char buffer[], State* state)
+{
+	char message[250];
+	strcpy(message, "200 List of supported commands: \n");
+	strcat(message, "CWD, CDUP, MKD, PWD, RMDIR, LIST \n");
+	strcat(message, "USER, PASS, SYST, TYPE, NOOP, HELP, QUIT \n");
+	strcat(message, "PORT, PASV, STOR, RETR, SIZE, NOOP \n");
 
 	setResponseMessage(message, buffer);
 }
