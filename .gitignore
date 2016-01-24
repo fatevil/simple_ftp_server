@@ -2,6 +2,7 @@
 *.project
 simple_ftp_server.txt
 simple_ftp_server.mk
+*~
 
 
 
