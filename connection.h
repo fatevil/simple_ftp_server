@@ -47,8 +47,13 @@ typedef struct State
 	/* Socket for data transmission*/
 	int socket;
 
+	/* Socket for text transmission*/
+	int textSocket;
+
 	/* 0 for ASCII,  1 for binary file transfer */
 	int type;
+
+	int connectionSocket;
 
 } State;
 
@@ -59,5 +64,5 @@ void communicateWithCmd();
 void writeMessage(int socket, char buffer[]);
 void readMessage(int socket, char buffer[]);
 int startActiveModeDataConnection(struct hostent* server, int port);
-void startPassiveModeDataConnection(int* port, State* state);
+int startPassiveModeDataConnection(int* port, State* state);
 ssize_t sendFileOurWay(int out_fd, int in_fd, off_t* offset, size_t count);

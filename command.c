@@ -54,7 +54,8 @@ void handleCommand(Command* command, char buffer[], State* state)
 	} else if (strcmp(command->command, "PASV") == 0) {
 		executePASV(command, buffer, state);
 	} else if (strcmp(command->command, "STOR") == 0) {
-		executeSTOR(command, buffer, state);
+		// executeSTOR(command, buffer, state);
+		setResponseMessage("200 Ok, let's do it!", buffer);
 	} else if (strcmp(command->command, "HELP") == 0) {
 		executeHELP(command, buffer, state);
 	} else {
@@ -307,6 +308,7 @@ void executePORT(Command* command, char buffer[], State* state)
 		setResponseMessage(message, buffer);
 	}
 	state->mode = ACTIVE_MODE;
+	state->connectionSocket = socket;
 	state->socket = socket;
 
 	free(serverAdresse->addresse);
@@ -318,20 +320,15 @@ void executePASV(Command* command, char buffer[], State* state)
 	if (state->socket != 0) {
 		close(state->socket);
 	}
-	int port = 8524;
-
-	startPassiveModeDataConnection(&port, state);
 	char message[100];
-	int p1 = (port / 256);
-	int p2 = (port % 256);
-	sprintf(message, "227 Entering Passive Mode (127,0,0,1,%d,%d) \n", p1, p2);
+	// sprintf(message, "227 Entering Passive Mode (127,0,0,1,%d,%d) \n", p1, p2);
+	sprintf(message, "227 Entering Passive Mode (127,0,0,1,204,141) \n");
 	setResponseMessage(message, buffer);
 	state->mode = PASSIVE_MODE;
 }
 
 void executeRETR(Command* command, char buffer[], State* state)
 {
-	printf("%d \n", state->socket);
 
 	if (state->socket == 0) {
 		setResponseMessage("450 There's no data transfer connection! \n", buffer);
@@ -372,10 +369,13 @@ void executeRETR(Command* command, char buffer[], State* state)
 		printf("We've sent out - %d  - bytes! \n", (int)sent);
 	}
 	state->mode = UNSET_MODE;
+	printf("ending %d \n", state->socket);
+	printf("ending %d \n", state->connectionSocket);
 	close(state->socket);
+	close(state->connectionSocket);
 	close(fd);
 
-	setResponseMessage("226 File send OK.\n", buffer);
+	setResponseMessage("250 File send OK.\n", buffer);
 }
 
 void executeSTOR(Command* command, char buffer[], State* state)
@@ -406,9 +406,10 @@ void executeSTOR(Command* command, char buffer[], State* state)
 	if (res == -1) {
 		error("ERROR on splice");
 	} else {
-		setResponseMessage("226 File send OK.\n", buffer);
+		setResponseMessage("250 File send OK.\n", buffer);
 	}
 	close(state->socket);
+	close(state->connectionSocket);
 	close(fd);
 	fclose(fp);
 }

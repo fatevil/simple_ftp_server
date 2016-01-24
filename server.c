@@ -12,6 +12,8 @@
 #include "command.h"
 #include "util.h"
 
+void checkCommandAfter(Command* command, State* state, char buffer[]);
+
 int sockfd, newsockfd, n;
 socklen_t clilen;
 char buffer[BSIZE];
@@ -89,6 +91,7 @@ void communicateWithClient(int newsockfd)
 
 	strcpy(state->pwd, BASEFOLDER);
 	state->keepConnection = KEEP_CONNECTION;
+	state->textSocket = newsockfd;
 
 	strcpy(buffer, "220 Hi there! \n");
 	/*Send back response*/
@@ -99,6 +102,8 @@ void communicateWithClient(int newsockfd)
 			close(newsockfd);
 			exit(0);
 		}
+		checkCommandAfter(cmd, state, buffer);
+
 		bzeroCommand(cmd);
 		bzero(buffer, BSIZE);
 
@@ -111,5 +116,27 @@ void communicateWithClient(int newsockfd)
 
 		/*Send back response*/
 		writeMessage(newsockfd, buffer);
+	}
+}
+void checkCommandAfter(Command* command, State* state, char buffer[])
+{
+	if (strcmp(command->command, "PASV") == 0) {
+		int port = 52365;
+
+		startPassiveModeDataConnection(&port, state);
+		//		int p1 = (port / 256);
+		//		int p2 = (port % 256);
+	} else if (strcmp(command->command, "RETR") == 0) {
+		printf("ending %d \n", state->socket);
+		printf("ending %d \n", state->connectionSocket);
+
+		//		sleep(1);
+		//		writeMessage(state->textSocket, "200 Thank you!\n");
+		if (state->connectionSocket != state->socket) {
+			close(state->socket);
+		}
+		close(state->connectionSocket);
+	} else if (strcmp(command->command, "STOR") == 0) {
+		executeSTOR(command, buffer, state);
 	}
 }
